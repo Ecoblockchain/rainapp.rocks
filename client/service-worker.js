@@ -74,12 +74,10 @@ self.addEventListener('fetch', e => {
 	// Try to request fresh files every time
 	// Fallback to cache
 	if(freshFileLookup[pathname]) {
-		console.log('fetch', pathname, freshFileLookup[pathname], JSON.stringify(pathname))
 		return e.respondWith(
 			caches.open('fresh_files').then(freshCache =>
 				fetch(request.clone()).then(
 					response => {
-						console.log('fetchworked')
 						freshCache.put(request, response.clone());
 						return response;
 					},
@@ -92,15 +90,18 @@ self.addEventListener('fetch', e => {
 	e.respondWith(
 		caches.open('static_files').then(staticCache =>
 			staticCache.match(request.clone()).then(response => {
+				console.log('static files', response)
 				if(response) {
+					console.log('static files responded')
 					return response;
 				}
 
 				if(lazyStaticFileLookup[pathname]) {
+					console.log('lazy static file', pathname)
 					staticCache.add(pathname);
 				}
 
-				return fetch(request);
+				return fetch(request).catch(e => {console.log('fetch err', e)});
 			})
 		)
 	);
