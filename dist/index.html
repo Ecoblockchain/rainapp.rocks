@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width">
+		<title>RainApp</title>
+		<link rel="shortcut icon" href="/icons/drop.png">
+		<link rel="manifest" href="/manifest.json">
+		<link rel="stylesheet" href="/css/base.css">
+		<link rel="stylesheet" href="/css/play-pause.css">
+		<link rel="stylesheet" href="/css/checkbox.css">
+		<link rel="stylesheet" href="/css/sound.css">
+	</head>
+	<body>
+		<header>
+			<h1 class="site-title">RainApp</h1>
+		</header>
+
+		<main id="rainroot" class="site-main">
+			<div class="sound" data-sound="rain_under_tree">
+				<div class="sound__firstrow">
+					<img class="sound__icon" src="/icons/weather/rain.svg" alt="Rain Under Tree">
+					<div class="sound__toggle play-pause">
+						<div class="play"></div>
+						<div class="pause"></div>
+					</div>
+					<div class="sound__getfull checkbox">
+						<input type="checkbox" id="checkbox1">
+						<label for="checkbox1"></label>
+					</div>
+					<label class="sound__getfull">Use Full Sound (xMB)</label>
+				</div>
+				<input class="sound__volume" type="range" min="0" max="1" step="0.01">
+			</div>
+		</main>
+		<script src="/js/main.js"></script>
+		<footer class="site-footer">
+			<a href="/credits.html">Credits</a>
+		</footer>
+	</body>
+</html>

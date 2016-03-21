@@ -1,0 +1,19 @@
+{
+  "short_name": "RainApp",
+  "name": "RainApp",
+  "icons": [
+    {
+      "src": "icons/drop.png",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/drop.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait"
+}

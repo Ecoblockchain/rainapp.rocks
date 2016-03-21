@@ -1,0 +1,45 @@
+.play-pause {
+	position: relative;
+	cursor: pointer;
+	display: block;
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	border: 5px solid rgba(84, 74, 72, 0.8);
+	transition: border-color 0.3s;
+}
+.play-pause:hover {
+	border-color: rgba(84, 74, 72, 1);
+}
+.play-pause > .play {
+	position: absolute;
+	top: 9px;
+	left: 17px;
+	border-top: 16px solid transparent;
+	border-bottom: 16px solid transparent;
+	border-left: 20px solid rgba(84, 74, 72, 0.8);
+	z-index: 1;
+	transition: opacity 0.3s;
+}
+.play-pause.active > .play {
+	opacity: 0;
+	z-index: 0;
+}
+.play-pause > .pause {
+	opacity: 0;
+	z-index: 0;
+	transition: opacity 0.3s;
+}
+.play-pause.active > .pause {
+	position: absolute;
+	display: block;
+	opacity: 1;
+	z-index: 1;
+	width: 9px;
+	height: 30px;
+	left: 12px;
+	top: 10px;
+	background: transparent;
+	border-left: 7px solid rgba(84, 74, 72, 0.8);
+	border-right: 7px solid rgba(84, 74, 72, 0.8);
+}
