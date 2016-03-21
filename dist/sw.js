@@ -108,7 +108,7 @@
 				}
 
 				if (lazyStaticFileLookup[pathname]) {
-					console.log('lazy static file');
+					console.log('lazy static file', pathname);
 					staticCache.add(pathname);
 				}
 
