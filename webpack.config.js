@@ -1,3 +1,6 @@
+var webpack = require('webpack');
+
+
 module.exports = [
 	{
 		entry: './client/main.js',
@@ -21,7 +24,12 @@ module.exports = [
 					}
 				}
 			]
-		}
+		},
+		plugins: [
+			new webpack.DefinePlugin({
+				'process.env.NODE_ENV': '"production"'
+			}),
+		]
 	},
 	{
 		entry: './client/service-worker.js',
