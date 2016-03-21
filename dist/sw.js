@@ -109,7 +109,7 @@
 
 				if (lazyStaticFileLookup[pathname]) {
 					console.log('lazy static file', pathname);
-					staticCache.add(pathname);
+					staticCache.add(request.clone());
 				}
 
 				return fetch(request).catch(function (e) {

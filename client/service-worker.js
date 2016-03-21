@@ -98,7 +98,7 @@ self.addEventListener('fetch', e => {
 
 				if(lazyStaticFileLookup[pathname]) {
 					console.log('lazy static file', pathname)
-					staticCache.add(pathname);
+					staticCache.add(request.clone());
 				}
 
 				return fetch(request).catch(e => {console.log('fetch err', e)});
