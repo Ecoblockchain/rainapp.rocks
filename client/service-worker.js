@@ -3,7 +3,10 @@ const freshFiles = [
 	'/',
 	'/credits.html',
 	'/js/main.js',
-	'/css/base.css'
+	'/css/base.css',
+	'/css/checkbox.css',
+	'/css/play-pause.css',
+	'/css/sound.css'
 ];
 const freshFileLookup = lookupFromArray(freshFiles);
 
@@ -58,41 +61,48 @@ self.addEventListener('activate', e => {
 	e.waitUntil(self.clients.claim());
 });
 
-self.addEventListener('fetch', ({request}) => {
+self.addEventListener('fetch', e => {
 	// if in the static file cache, return
+	const {request} = e;
 	const {pathname, host} = new URL(request.url);
 
 	// Request to another origin
 	if(location.host !== host) {
-		return fetch(request);
+		return e.respondWith(fetch(request));
 	}
 
 	// Try to request fresh files every time
 	// Fallback to cache
 	if(freshFileLookup[pathname]) {
-		return caches.open('fresh_files').then(freshCache =>
-			fetch(request.clone()).then(
-				response => {
-					freshCache.put(request, response.clone());
-					return response;
-				},
-				fetchErr => freshCache.match(request)
+		console.log('fetch', pathname, freshFileLookup[pathname], JSON.stringify(pathname))
+		return e.respondWith(
+			caches.open('fresh_files').then(freshCache =>
+				fetch(request.clone()).then(
+					response => {
+						console.log('fetchworked')
+						freshCache.put(request, response.clone());
+						return response;
+					},
+					fetchErr => freshCache.match(request)
+				)
 			)
-		)
+		);
 	}
 
-	caches.open('static_files').then(staticCache =>
-		staticCache.match(request.clone()).then(response => {
-			if(response) {
-				return response;
-			}
+	e.respondWith(
+		caches.open('static_files').then(staticCache =>
+			staticCache.match(request.clone()).then(response => {
+				if(response) {
+					return response;
+				}
 
-			if(lazyStaticFileLookup[pathname]) {
-				staticCache.add(pathname);
-			}
+				if(lazyStaticFileLookup[pathname]) {
+					staticCache.add(pathname);
+				}
 
-			return fetch(request);
-		})
+				return fetch(request);
+			})
+		)
 	);
 });
 
