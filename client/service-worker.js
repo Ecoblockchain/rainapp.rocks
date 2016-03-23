@@ -102,21 +102,43 @@ self.addEventListener('fetch', e => {
 					//console.log('lazy static file', pathname)
 					if(!pendingPaths.has(pathname)) {
 						pendingPaths.set(pathname, true);
-						fetch(pathname)
-						.then(response => response.blob())
+						return fetch(pathname)
+						.then(response => {
+							pendingPaths.set(pathname, response.clone());
+
+							return response.blob();
+						})
 						.then(blob => {
 							//console.log('added to cache as blob', blob.size)
 							staticCache.put(pathname, new Response(blob)).then(() => {
 								pendingPaths.delete(pathname);
 							});
+							return new Response(blob);
 						})
 						.catch(err => {
 							pendingPaths.delete(pathname);
 							throw err;
 						});
+					} else {
+						return doUntil(() => {
+							//console.log('waiting for other stream to finish')
+							const response = pendingPaths.get(pathname);
+							return response instanceof Response || !response;
+						})
+						.then(() => {
+							const response = pendingPaths.get(pathname);
+							if(response instanceof Response) {
+								//console.log('responded with clone of other stream')
+								return response.clone();
+							} else {
+								//console.log('responded with lone fetch')
+								return fetch(request);
+							}
+						});
 					}
 				}
 
+				//console.log('single fetch')
 				return fetch(request).catch(err => {
 					console.log('fetch err', err);
 				});
@@ -124,6 +146,21 @@ self.addEventListener('fetch', e => {
 		)
 	);
 });
+
+
+function doUntil(checkFn) {
+	return new Promise((resolve, reject) => {
+		function check() {
+			if(checkFn()) {
+				resolve();
+			} else {
+				setTimeout(check, 14);
+			}
+		}
+
+		check();
+	})
+}
 
 
 function lookupFromArray(arr) {
