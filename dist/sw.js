@@ -101,6 +101,10 @@
 
 		e.respondWith(caches.open('static_files').then(function (staticCache) {
 			return staticCache.match(request.clone()).then(function (response) {
+				if (request.headers.range) {
+					console.log('range request', self.r = request.headers.entries());
+					// TODO: return the range of data requested
+				}
 				console.log('static files', response);
 				if (response) {
 					console.log('static files responded');
@@ -109,7 +113,7 @@
 
 				if (lazyStaticFileLookup[pathname]) {
 					console.log('lazy static file', pathname);
-					staticCache.add(request.clone());
+					staticCache.add(pathname);
 				}
 
 				return fetch(request).catch(function (e) {
