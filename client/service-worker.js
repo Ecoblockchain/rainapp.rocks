@@ -43,6 +43,8 @@ const lazyStaticFiles = [
 ];
 const lazyStaticFileLookup = lookupFromArray(lazyStaticFiles);
 
+let pendingPaths = new Map();
+
 
 self.addEventListener('install', e => {
 	e.waitUntil(
@@ -92,37 +94,32 @@ self.addEventListener('fetch', e => {
 	e.respondWith(
 		caches.open('static_files').then(staticCache =>
 			staticCache.match(pathname).then(response => {
-				if(response) {
-					const responseLength = parseInt(response.headers.get('content-length'));
-					const range = parseRange(responseLength, request.headers.get('range') || '');
-					if(range !== -1 && range !== -2) {
-						const firstRange = range[0];
-						//console.log('range request?', responseLength, response.headers.get('content-length'), firstRange)
-						return response.blob()
-						.then(blob => {
-							return new Response(blob.slice(firstRange.start, firstRange.end), {
-								headers: {
-									'Content-Range': `bytes ${firstRange.start}-${firstRange.end}/${responseLength}`
-								}
-							});
-						});
-					} else {
-						return response;
-					}
-					return;
+				if(response) { // Serve the cache response
+					return response;
 				}
 
 				if(lazyStaticFileLookup[pathname]) {
 					//console.log('lazy static file', pathname)
-					fetch(pathname)
-					.then(response => response.blob())
-					.then(blob => {
-						//console.log('added to cache as blob', blob.size)
-						staticCache.put(pathname, new Response(blob));
-					});
+					if(!pendingPaths.has(pathname)) {
+						pendingPaths.set(pathname, true);
+						fetch(pathname)
+						.then(response => response.blob())
+						.then(blob => {
+							//console.log('added to cache as blob', blob.size)
+							staticCache.put(pathname, new Response(blob)).then(() => {
+								pendingPaths.delete(pathname);
+							});
+						})
+						.catch(err => {
+							pendingPaths.delete(pathname);
+							throw err;
+						});
+					}
 				}
 
-				return fetch(request).catch(e => {console.log('fetch err', e)});
+				return fetch(request).catch(err => {
+					console.log('fetch err', err);
+				});
 			})
 		)
 	);

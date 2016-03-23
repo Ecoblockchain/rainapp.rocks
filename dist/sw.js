@@ -46,8 +46,6 @@
 
 	'use strict';
 
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
 	var _rangeParser = __webpack_require__(1);
 
 	var _rangeParser2 = _interopRequireDefault(_rangeParser);
@@ -64,6 +62,8 @@
 	// File that are gotten from the cache after being requested at least once
 	var lazyStaticFiles = ['/audio/full/campfire.ogg', '/audio/full/crickets.ogg', '/audio/full/drizzle.ogg', '/audio/full/rain.ogg', '/audio/full/wind.ogg', '/audio/full/lightning.ogg'];
 	var lazyStaticFileLookup = lookupFromArray(lazyStaticFiles);
+
+	var pendingPaths = new Map();
 
 	self.addEventListener('install', function (e) {
 		e.waitUntil(Promise.all([caches.open('fresh_files').then(function (cache) {
@@ -110,52 +110,30 @@
 		e.respondWith(caches.open('static_files').then(function (staticCache) {
 			return staticCache.match(pathname).then(function (response) {
 				if (response) {
-					var _ret = function () {
-						var responseLength = parseInt(response.headers.get('content-length'));
-						var range = (0, _rangeParser2.default)(responseLength, request.headers.get('range') || '');
-						if (range !== -1 && range !== -2) {
-							var _ret2 = function () {
-								var firstRange = range[0];
-								//console.log('range request?', responseLength, response.headers.get('content-length'), firstRange)
-								return {
-									v: {
-										v: response.blob().then(function (blob) {
-											return new Response(blob.slice(firstRange.start, firstRange.end), {
-												headers: {
-													'Content-Range': 'bytes ' + firstRange.start + '-' + firstRange.end + '/' + responseLength
-												}
-											});
-										})
-									}
-								};
-							}();
-
-							if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
-						} else {
-							return {
-								v: response
-							};
-						}
-						return {
-							v: void 0
-						};
-					}();
-
-					if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
+					// Serve the cache response
+					return response;
 				}
 
 				if (lazyStaticFileLookup[pathname]) {
 					//console.log('lazy static file', pathname)
-					fetch(pathname).then(function (response) {
-						return response.blob();
-					}).then(function (blob) {
-						//console.log('added to cache as blob', blob.size)
-						staticCache.put(pathname, new Response(blob));
-					});
+					if (!pendingPaths.has(pathname)) {
+						pendingPaths.set(pathname, true);
+						fetch(pathname).then(function (response) {
+							return response.blob();
+						}).then(function (blob) {
+							//console.log('added to cache as blob', blob.size)
+							staticCache.put(pathname, new Response(blob)).then(function () {
+								pendingPaths.delete(pathname);
+							});
+						}).catch(function (err) {
+							pendingPaths.delete(pathname);
+							throw err;
+						});
+					}
 				}
 
-				return fetch(request).catch(function (e) {
-					console.log('fetch err', e);
+				return fetch(request).catch(function (err) {
+					console.log('fetch err', err);
 				});
 			});
 		}));
