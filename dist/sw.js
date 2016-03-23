@@ -42,9 +42,17 @@
 /************************************************************************/
 /******/ ([
 /* 0 */
-/***/ function(module, exports) {
+/***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+	var _rangeParser = __webpack_require__(1);
+
+	var _rangeParser2 = _interopRequireDefault(_rangeParser);
+
+	function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 	// Preloaded files that are only gotten from the cache when offline
 	var freshFiles = ['/', '/credits.html', '/js/main.js', '/css/base.css', '/css/checkbox.css', '/css/play-pause.css', '/css/sound.css'];
@@ -100,20 +108,50 @@
 		}
 
 		e.respondWith(caches.open('static_files').then(function (staticCache) {
-			return staticCache.match(request.clone()).then(function (response) {
-				if (request.headers.range) {
-					console.log('range request', self.r = request.headers.entries());
-					// TODO: return the range of data requested
-				}
-				console.log('static files', response);
+			return staticCache.match(pathname).then(function (response) {
 				if (response) {
-					console.log('static files responded');
-					return response;
+					var _ret = function () {
+						var responseLength = parseInt(response.headers.get('content-length'));
+						var range = (0, _rangeParser2.default)(responseLength, request.headers.get('range') || '');
+						if (range !== -1 && range !== -2) {
+							var _ret2 = function () {
+								var firstRange = range[0];
+								//console.log('range request?', responseLength, response.headers.get('content-length'), firstRange)
+								return {
+									v: {
+										v: response.blob().then(function (blob) {
+											return new Response(blob.slice(firstRange.start, firstRange.end), {
+												headers: {
+													'Content-Range': 'bytes ' + firstRange.start + '-' + firstRange.end + '/' + responseLength
+												}
+											});
+										})
+									}
+								};
+							}();
+
+							if ((typeof _ret2 === 'undefined' ? 'undefined' : _typeof(_ret2)) === "object") return _ret2.v;
+						} else {
+							return {
+								v: response
+							};
+						}
+						return {
+							v: void 0
+						};
+					}();
+
+					if ((typeof _ret === 'undefined' ? 'undefined' : _typeof(_ret)) === "object") return _ret.v;
 				}
 
 				if (lazyStaticFileLookup[pathname]) {
-					console.log('lazy static file', pathname);
-					staticCache.add(pathname);
+					//console.log('lazy static file', pathname)
+					fetch(pathname).then(function (response) {
+						return response.blob();
+					}).then(function (blob) {
+						//console.log('added to cache as blob', blob.size)
+						staticCache.put(pathname, new Response(blob));
+					});
 				}
 
 				return fetch(request).catch(function (e) {
@@ -133,6 +171,75 @@
 
 		return r;
 	}
+
+/***/ },
+/* 1 */
+/***/ function(module, exports) {
+
+	/*!
+	 * range-parser
+	 * Copyright(c) 2012-2014 TJ Holowaychuk
+	 * MIT Licensed
+	 */
+
+	'use strict';
+
+	/**
+	 * Module exports.
+	 * @public
+	 */
+
+	module.exports = rangeParser;
+
+	/**
+	 * Parse "Range" header `str` relative to the given file `size`.
+	 *
+	 * @param {Number} size
+	 * @param {String} str
+	 * @return {Array}
+	 * @public
+	 */
+
+	function rangeParser(size, str) {
+	  var valid = true;
+	  var i = str.indexOf('=');
+
+	  if (-1 == i) return -2;
+
+	  var arr = str.slice(i + 1).split(',').map(function(range){
+	    var range = range.split('-')
+	      , start = parseInt(range[0], 10)
+	      , end = parseInt(range[1], 10);
+
+	    // -nnn
+	    if (isNaN(start)) {
+	      start = size - end;
+	      end = size - 1;
+	    // nnn-
+	    } else if (isNaN(end)) {
+	      end = size - 1;
+	    }
+
+	    // limit last-byte-pos to current length
+	    if (end > size - 1) end = size - 1;
+
+	    // invalid
+	    if (isNaN(start)
+	      || isNaN(end)
+	      || start > end
+	      || start < 0) valid = false;
+
+	    return {
+	      start: start,
+	      end: end
+	    };
+	  });
+
+	  arr.type = str.slice(0, i);
+
+	  return valid ? arr : -1;
+	}
+
 
 /***/ }
 /******/ ]);

@@ -1,3 +1,5 @@
+import parseRange from 'range-parser';
+
 // Preloaded files that are only gotten from the cache when offline
 const freshFiles = [
 	'/',
@@ -89,20 +91,35 @@ self.addEventListener('fetch', e => {
 
 	e.respondWith(
 		caches.open('static_files').then(staticCache =>
-			staticCache.match(request.clone()).then(response => {
-				if(request.headers.range) {
-					console.log('range request', self.r=request.headers.entries())
-					// TODO: return the range of data requested
-				}
-				console.log('static files', response)
+			staticCache.match(pathname).then(response => {
 				if(response) {
-					console.log('static files responded')
-					return response;
+					const responseLength = parseInt(response.headers.get('content-length'));
+					const range = parseRange(responseLength, request.headers.get('range') || '');
+					if(range !== -1 && range !== -2) {
+						const firstRange = range[0];
+						//console.log('range request?', responseLength, response.headers.get('content-length'), firstRange)
+						return response.blob()
+						.then(blob => {
+							return new Response(blob.slice(firstRange.start, firstRange.end), {
+								headers: {
+									'Content-Range': `bytes ${firstRange.start}-${firstRange.end}/${responseLength}`
+								}
+							});
+						});
+					} else {
+						return response;
+					}
+					return;
 				}
 
 				if(lazyStaticFileLookup[pathname]) {
-					console.log('lazy static file', pathname)
-					staticCache.add(pathname);
+					//console.log('lazy static file', pathname)
+					fetch(pathname)
+					.then(response => response.blob())
+					.then(blob => {
+						//console.log('added to cache as blob', blob.size)
+						staticCache.put(pathname, new Response(blob));
+					});
 				}
 
 				return fetch(request).catch(e => {console.log('fetch err', e)});
