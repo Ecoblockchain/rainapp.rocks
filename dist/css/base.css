@@ -15,7 +15,7 @@ body {
 	padding: 0;
 	min-height: 100%;
 
-	font-family: Arial, sans-serif;
+	font-family: Comfortaa, cursive;
 
 	background-color: rgb(185, 193, 196);
 	background-image: url('/images/rain_bg.jpg');
@@ -39,7 +39,6 @@ a:active {
 
 header {
 	color: rgba(84, 74, 72, 0.8);
-	font-family: Comfortaa, cursive;
 	font-weight: bold;
 	letter-spacing: 4px;
 	padding: 20px 0 40px 0;
@@ -67,7 +66,6 @@ header {
 	text-align: center;
 	font-weight: bold;
 	line-height: 20px;
-	font-family: Comfortaa, cursive;
 }
 
 .site-footer > a {
