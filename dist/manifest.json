@@ -8,6 +8,16 @@
       "type": "image/png"
     },
     {
+      "src": "icons/drop_64.png",
+      "sizes": "64x64",
+      "type": "image/png"
+    },
+    {
+      "src": "icons/drop_128.png",
+      "sizes": "128x128",
+      "type": "image/png"
+    },
+    {
       "src": "icons/drop.svg",
       "sizes": "any",
       "type": "image/svg+xml"
