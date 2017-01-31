@@ -1,9 +1,9 @@
-var webpack = require('webpack');
+const webpack = require('webpack');
 
 
 module.exports = [
 	{
-		entry: './client/main.js',
+		entry: './src/main.js',
 		output: {
 			path: __dirname + '/dist/js',
 			filename: 'main.js'
@@ -32,7 +32,7 @@ module.exports = [
 		]
 	},
 	{
-		entry: './client/service-worker.js',
+		entry: './src/service-worker.js',
 		output: {
 			path: __dirname + '/dist',
 			filename: 'sw.js'
