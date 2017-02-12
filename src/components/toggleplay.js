@@ -1,4 +1,4 @@
-import {element} from 'deku';
+import {h} from 'preact';
 
 
 export default {

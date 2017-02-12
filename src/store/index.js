@@ -1,7 +1,4 @@
-import {
-	createStore,
-	combineReducers
-} from 'redux';
+import {createStore} from 'redux';
 
 
 export default () => createStore(reducer);
@@ -69,12 +66,6 @@ const reducer = (state = {}, action) => {
 
 const soundsReducer = (state = initialSounds, {type, payload}) => {
 	switch(type) {
-		case 'ADD_SOUND':
-			const pos = findMatchesId(state, payload.id);
-			if(pos === -1) {
-				return state.concat(payload);
-			}
-			return replaceElement(state, pos, payload);
 		case 'SET_SOUND_VOLUME':
 			return replaceSound(state, payload.id, sound => {
 				return {...sound, volume: payload.volume}
