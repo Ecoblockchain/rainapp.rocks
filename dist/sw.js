@@ -86,7 +86,7 @@ function handleAndCacheFile(request) {
         size = fileInfo.size,
         chunks = fileInfo.chunks;
 
-    var _parseRange = __WEBPACK_IMPORTED_MODULE_0_range_parser___default()(size, request.headers.range),
+    var _parseRange = __WEBPACK_IMPORTED_MODULE_0_range_parser___default()(size, request.headers.range || 'bytes=0-'),
         _parseRange2 = _slicedToArray(_parseRange, 1),
         _parseRange2$ = _parseRange2[0],
         start = _parseRange2$.start,
@@ -100,11 +100,15 @@ function handleAndCacheFile(request) {
     var chunksToLoad = chunks.slice(startChunk, endChunk + 1);
 
     var chunkLoaders = chunksToLoad.map(function (chunkInfo) {
-      return ensureChunkCached(url, chunkInfo);
+      return function () {
+        return ensureChunkCached(url, chunkInfo);
+      };
     });
 
     var bufferOffset = 0;
     var buffer = new Uint8Array(end - start + 1);
+
+    console.log('buffer size', buffer.length);
 
     return series(chunkLoaders, function (chunk, i) {
       var chunkInfo = chunksToLoad[i];
@@ -120,6 +124,7 @@ function handleAndCacheFile(request) {
     }).then(function () {
       return new Response(buffer.buffer, {
         headers: {
+          'Accept-Ranges': 'bytes',
           'Content-Range': 'bytes ' + start + '-' + end + '/' + size,
           'Content-Length': buffer.buffer.byteLength
         }
@@ -225,19 +230,19 @@ function getChunkInfos(size, chunkSize) {
   return r;
 }
 
-function series(fns, onEach) {
+function series(actions, onEach) {
   return new Promise(function (resolve, reject) {
     var i = 0;
 
     next();
 
     function next() {
-      if (fns.length === 0) {
-        resolve();
+      if (actions.length === 0) {
+        return resolve();
       }
 
-      var fn = fns.shift();
-      fn().then(function (r) {
+      var action = actions.shift();
+      action().then(function (r) {
         if (onEach) {
           onEach(r, i++);
         }
@@ -337,30 +342,30 @@ function rangeParser(size, str) {
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_swkit__ = __webpack_require__(1);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_swkit___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_swkit__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__plugins_file_cache__ = __webpack_require__(0);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__file_cache__ = __webpack_require__(0);
 
 
 
 var router = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_swkit__["createRouter"])();
 
-var precacheNetworkFirst = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_swkit__["cacheFirst"])('precache_rainapp');
+var precacheCacheFirst = __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_swkit__["cacheFirst"])('precache_rainapp');
 
 var precachePaths = ['/', '/credits.html', '/js/main.js', '/css/base.css', '/css/checkbox.css', '/css/play-pause.css', '/css/sound.css', '/images/rain_bg.jpg', '/css/comfortaa.woff2', '/icons/weather/campfire.svg', '/icons/weather/crickets.svg', '/icons/weather/drizzle.svg', '/icons/weather/rain.svg', '/icons/weather/wind.svg', '/icons/weather/lightning.svg', '/audio/samples/campfire.ogg', '/audio/samples/crickets.ogg', '/audio/samples/drizzle.ogg', '/audio/samples/rain.ogg', '/audio/samples/wind.ogg', '/audio/samples/lightning.ogg'];
 
 precachePaths.forEach(function (path) {
-  router.get(path, precacheNetworkFirst);
+  router.get(path, precacheCacheFirst);
 });
 
 var lazyStaticFiles = ['/audio/full/campfire.ogg', '/audio/full/crickets.ogg', '/audio/full/drizzle.ogg', '/audio/full/rain.ogg', '/audio/full/wind.ogg', '/audio/full/lightning.ogg'];
 
 lazyStaticFiles.forEach(function (path) {
-  router.get(path, __WEBPACK_IMPORTED_MODULE_1__plugins_file_cache__["a" /* handleAndCacheFile */]);
+  router.get(path, __WEBPACK_IMPORTED_MODULE_1__file_cache__["a" /* handleAndCacheFile */]);
 });
 
 __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_swkit__["on"])('fetch', router.dispatch);
 
 __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_swkit__["on"])('install', function (e) {
-  e.waitUntil(Promise.all([__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_swkit__["cacheAll"])('precache_rainapp', precachePaths), __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_swkit__["cacheAll"])('precache_rainapp', unchangingPaths)]).then(skipWaiting()));
+  e.waitUntil(__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_swkit__["cacheAll"])('precache_rainapp', precachePaths).then(skipWaiting()));
 });
 
 __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_swkit__["on"])('activate', function (e) {

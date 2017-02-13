@@ -26,7 +26,7 @@ module.exports = [
     }
   },
   {
-    entry: './src/service-worker.js',
+    entry: './src/service-worker/index.js',
     output: {
       path: './dist',
       filename: 'sw.js'

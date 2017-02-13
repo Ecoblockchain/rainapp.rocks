@@ -1746,7 +1746,7 @@ return lib$1;
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony export (immutable) */ __webpack_exports__["setSoundVolume"] = setSoundVolume;
 /* harmony export (immutable) */ __webpack_exports__["toggleSoundPlaying"] = toggleSoundPlaying;
-/* harmony export (immutable) */ __webpack_exports__["setSoundUsingFull"] = setSoundUsingFull;
+/* harmony export (immutable) */ __webpack_exports__["toggleSoundUsingFull"] = toggleSoundUsingFull;
 /* harmony export (immutable) */ __webpack_exports__["setState"] = setState;
 function setSoundVolume(soundId, volume) {
 	return {
@@ -1765,13 +1765,10 @@ function toggleSoundPlaying(soundId) {
 	};
 }
 
-function setSoundUsingFull(soundId, usingFull) {
+function toggleSoundUsingFull(soundId) {
 	return {
-		type: 'SET_SOUND_USING_FULL',
-		payload: {
-			id: soundId,
-			usingFull: usingFull
-		}
+		type: 'TOGGLE_SOUND_USING_FULL',
+		payload: soundId
 	};
 }
 
@@ -2360,17 +2357,17 @@ var Sounds = function Sounds(_ref) {
   var sounds = _ref.sounds,
       setSoundVolume = _ref.setSoundVolume,
       toggleSoundPlaying = _ref.toggleSoundPlaying,
-      setSoundUsingFull = _ref.setSoundUsingFull;
+      toggleSoundUsingFull = _ref.toggleSoundUsingFull;
 
   return __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])(
     'div',
     null,
     sounds.map(function (sound) {
       return __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])(__WEBPACK_IMPORTED_MODULE_3__sound__["a" /* default */], _extends({
-        key: 'sound_' + sound.id,
+        key: sound.id,
         onVolumeChange: setSoundVolume.bind(null, sound.id),
         onTogglePlaying: toggleSoundPlaying.bind(null, sound.id),
-        onUsingFull: setSoundUsingFull.bind(null, sound.id)
+        onUsingFull: toggleSoundUsingFull.bind(null, sound.id)
       }, sound));
     })
   );
@@ -2566,9 +2563,9 @@ var soundsReducer = function soundsReducer() {
 			return replaceSound(state, payload, function (sound) {
 				return _extends({}, sound, { playing: !sound.playing });
 			});
-		case 'SET_SOUND_USING_FULL':
-			return replaceSound(state, payload.id, function (sound) {
-				return _extends({}, sound, { usingFull: payload.usingFull });
+		case 'TOGGLE_SOUND_USING_FULL':
+			return replaceSound(state, payload, function (sound) {
+				return _extends({}, sound, { usingFull: !sound.usingFull });
 			});
 		default:
 			return state;
@@ -2665,9 +2662,7 @@ var Sound = function Sound(_ref) {
       { 'class': 'sound__firstrow' },
       __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])('img', { 'class': 'sound__icon', src: '/icons/weather/' + id + '.svg', alt: title, title: title }),
       __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])(__WEBPACK_IMPORTED_MODULE_2__toggleplay__["a" /* default */], { playing: playing, onToggle: onTogglePlaying }),
-      __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])(__WEBPACK_IMPORTED_MODULE_1__checkbox__["a" /* default */], { id: '__' + id, label: 'Full Audio (' + fullSizeMB + 'MB)', onToggle: function onToggle(checked) {
-          return onUsingFull(checked);
-        }, checked: usingFull })
+      __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])(__WEBPACK_IMPORTED_MODULE_1__checkbox__["a" /* default */], { id: '__' + id, label: 'Full Audio (' + fullSizeMB + 'MB)', onToggle: onUsingFull, checked: usingFull })
     ),
     __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])('input', { 'class': 'sound__volume', onInput: function onInput(e) {
         return onVolumeChange(parseFloat(e.target.value));
@@ -2686,19 +2681,16 @@ var Sound = function Sound(_ref) {
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0_preact___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0_preact__);
 
 
-/* harmony default export */ __webpack_exports__["a"] = {
-	render: function render(_ref) {
-		var _ref$props = _ref.props,
-		    onToggle = _ref$props.onToggle,
-		    playing = _ref$props.playing;
+/* harmony default export */ __webpack_exports__["a"] = function (_ref) {
+  var onToggle = _ref.onToggle,
+      playing = _ref.playing;
 
-		return __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])(
-			'div',
-			{ 'class': 'play-pause ' + (playing ? 'active' : ''), onClick: onToggle },
-			__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])('div', { 'class': 'play' }),
-			__webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])('div', { 'class': 'pause' })
-		);
-	}
+  return __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])(
+    'div',
+    { 'class': 'play-pause' + (playing ? ' active' : ''), onClick: onToggle },
+    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])('div', { 'class': 'play' }),
+    __webpack_require__.i(__WEBPACK_IMPORTED_MODULE_0_preact__["h"])('div', { 'class': 'pause' })
+  );
 };
 
 /***/ }),

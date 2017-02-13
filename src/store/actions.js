@@ -15,13 +15,10 @@ export function toggleSoundPlaying(soundId) {
 	}
 }
 
-export function setSoundUsingFull(soundId, usingFull) {
+export function toggleSoundUsingFull(soundId) {
 	return {
-		type: 'SET_SOUND_USING_FULL',
-		payload: {
-			id: soundId,
-			usingFull
-		}
+		type: 'TOGGLE_SOUND_USING_FULL',
+		payload: soundId
 	}
 }
 

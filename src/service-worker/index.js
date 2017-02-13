@@ -4,13 +4,13 @@ import {
   createRouter,
   cacheFirst
 } from 'swkit';
-import {handleAndCacheFile} from './plugins/file-cache';
+import {handleAndCacheFile} from './file-cache';
 
 
 const router = createRouter();
 
 
-const precacheNetworkFirst = cacheFirst('precache_rainapp');
+const precacheCacheFirst = cacheFirst('precache_rainapp');
 
 const precachePaths = [
   '/',
@@ -40,7 +40,7 @@ const precachePaths = [
 ];
 
 precachePaths.forEach(path => {
-  router.get(path, precacheNetworkFirst);
+  router.get(path, precacheCacheFirst);
 });
 
 
@@ -62,10 +62,8 @@ on('fetch', router.dispatch);
 
 on('install', e => {
   e.waitUntil(
-    Promise.all([
-      cacheAll('precache_rainapp', precachePaths),
-      cacheAll('precache_rainapp', unchangingPaths)
-    ]).then(skipWaiting())
+    cacheAll('precache_rainapp', precachePaths)
+      .then(skipWaiting())
   );
 });
 

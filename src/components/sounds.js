@@ -9,14 +9,14 @@ const Sounds = ({
   sounds,
   setSoundVolume,
   toggleSoundPlaying,
-  setSoundUsingFull
+  toggleSoundUsingFull
 }) => {
   return <div>
     {sounds.map(sound => <Sound
-      key={'sound_' + sound.id}
+      key={sound.id}
       onVolumeChange={setSoundVolume.bind(null, sound.id)}
       onTogglePlaying={toggleSoundPlaying.bind(null, sound.id)}
-      onUsingFull={setSoundUsingFull.bind(null, sound.id)}
+      onUsingFull={toggleSoundUsingFull.bind(null, sound.id)}
       {...sound}
     />)}
   </div>

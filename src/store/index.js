@@ -74,9 +74,9 @@ const soundsReducer = (state = initialSounds, {type, payload}) => {
 			return replaceSound(state, payload, sound => {
 				return {...sound, playing: !sound.playing}
 			});
-		case 'SET_SOUND_USING_FULL':
-			return replaceSound(state, payload.id, sound => {
-				return {...sound, usingFull: payload.usingFull}
+		case 'TOGGLE_SOUND_USING_FULL':
+			return replaceSound(state, payload, sound => {
+				return {...sound, usingFull: !sound.usingFull}
 			});
 		default:
 			return state;

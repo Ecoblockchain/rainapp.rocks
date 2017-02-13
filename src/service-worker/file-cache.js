@@ -9,7 +9,7 @@ export function handleAndCacheFile(request) {
     .then(fileInfo => {
       const {url, size, chunks} = fileInfo;
 
-      const [{start, end}] = parseRange(size, request.headers.range);
+      const [{start, end}] = parseRange(size, request.headers.range || 'bytes=0-');
 
       const conversionFactor = chunks.length / size;
 
@@ -18,10 +18,12 @@ export function handleAndCacheFile(request) {
 
       const chunksToLoad = chunks.slice(startChunk, endChunk + 1);
 
-      const chunkLoaders = chunksToLoad.map(chunkInfo => ensureChunkCached(url, chunkInfo));
+      const chunkLoaders = chunksToLoad.map(chunkInfo => () => ensureChunkCached(url, chunkInfo));
 
       let bufferOffset = 0;
       const buffer = new Uint8Array(end - start + 1);
+
+      console.log('buffer size', buffer.length);
 
       return series(chunkLoaders, (chunk, i) => {
         const chunkInfo = chunksToLoad[i];
@@ -37,6 +39,7 @@ export function handleAndCacheFile(request) {
       })
         .then(() => new Response(buffer.buffer, {
           headers: {
+            'Accept-Ranges': 'bytes',
             'Content-Range': `bytes ${start}-${end}/${size}`,
             'Content-Length': buffer.buffer.byteLength
           }
@@ -137,19 +140,19 @@ function getChunkInfos(size, chunkSize) {
 }
 
 
-function series(fns, onEach) {
+function series(actions, onEach) {
   return new Promise((resolve, reject) => {
     let i = 0;
 
     next();
 
     function next() {
-      if(fns.length === 0) {
-        resolve();
+      if(actions.length === 0) {
+        return resolve();
       }
 
-      const fn = fns.shift();
-      fn().then(r => {
+      const action = actions.shift();
+      action().then(r => {
         if(onEach) {
           onEach(r, i++);
         }

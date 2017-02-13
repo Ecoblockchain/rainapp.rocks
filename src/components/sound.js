@@ -18,7 +18,7 @@ const Sound = ({
     <div class="sound__firstrow">
       <img class="sound__icon" src={`/icons/weather/${id}.svg`} alt={title} title={title} />
       <PlayPause playing={playing} onToggle={onTogglePlaying} />
-      <Checkbox id={'__' + id} label={`Full Audio (${fullSizeMB}MB)`} onToggle={checked => onUsingFull(checked)} checked={usingFull} />
+      <Checkbox id={'__' + id} label={`Full Audio (${fullSizeMB}MB)`} onToggle={onUsingFull} checked={usingFull} />
     </div>
     <input class="sound__volume" onInput={e => onVolumeChange(parseFloat(e.target.value))} type="range" min="0" max="1" step="0.01" value={volume} />
   </div>
