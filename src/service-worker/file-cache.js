@@ -5,18 +5,42 @@ const DEFAULT_CHUNK_SIZE = 128 * 1024;
 
 
 export function handleAndCacheFile(request) {
-  return ensureFileInfoCached(request.url, DEFAULT_CHUNK_SIZE)
+  return ensureFileInfoCached(request.url)
     .then(fileInfo => {
       const {url, size, chunks} = fileInfo;
 
       let rangeHeader = 'bytes=0-';
       let rangeRequest = false;
-      if(request.headers.range) {
-        rangeHeader = request.headers.range;
+      if(request.headers.get('range')) {
+        rangeHeader = request.headers.get('range');
         rangeRequest = true;
       }
 
-      const [{start, end}] = parseRange(size, rangeHeader);
+      let start, end;
+      try {
+        [{start, end}] = parseRange(size, rangeHeader);
+      } catch(e) {
+        return new Response('Invalid range', {status: 416});
+      }
+
+      return ensureFileRange(url, start, end)
+        .then(bodyStream => new Response(bodyStream, {
+          status: rangeRequest ? 206 : 200,
+          headers: {
+            'Accept-Ranges': 'bytes',
+            'Content-Range': `bytes ${start}-${end}/${size}`,
+            'Content-Length': end - start + 1,
+            'Content-Type': 'audio/ogg'
+          }
+        }));
+    });
+}
+
+// Returns a Promise of a ReadableStream
+function ensureFileRange(url, start, end) {
+  return ensureFileInfoCached(url)
+    .then(fileInfo => {
+      const {size, chunks} = fileInfo;
 
       const conversionFactor = chunks.length / size;
 
@@ -25,36 +49,35 @@ export function handleAndCacheFile(request) {
 
       const chunksToLoad = chunks.slice(startChunk, endChunk + 1);
 
-      const chunkLoaders = chunksToLoad.map(chunkInfo => () => ensureChunkCached(url, chunkInfo));
-
-      let bufferOffset = 0;
-      const buffer = new Uint8Array(end - start + 1);
-
-      return series(chunkLoaders, (chunk, i) => {
-        const chunkInfo = chunksToLoad[i];
-
-        if(chunkInfo.start < start) {
-          chunk = chunk.slice(start - chunkInfo.start);
-        } else if(chunkInfo.end > end) {
-          chunk = chunk.slice(0, end - chunkInfo.start + 1);
+      const streamNextChunk = controller => {
+        if(chunksToLoad.length === 0) {
+          controller.close();
+          return;
         }
 
-        buffer.set(chunk, bufferOffset);
-        bufferOffset += chunk.byteLength;
-      })
-        .then(() => new Response(buffer.buffer, {
-          status: rangeRequest ? 206 : 200,
-          headers: {
-            'Accept-Ranges': 'bytes',
-            'Content-Range': `bytes ${start}-${end}/${size}`,
-            'Content-Length': buffer.buffer.byteLength
-          }
-        }));
+        const chunkInfo = chunksToLoad.shift();
+
+        return ensureChunkCached(url, chunkInfo)
+          .then(chunkBuffer => {
+            if(chunkInfo.start < start) {
+              chunkBuffer = chunkBuffer.slice(start - chunkInfo.start);
+            } else if(chunkInfo.end > end) {
+              chunkBuffer = chunkBuffer.slice(0, end - chunkInfo.start + 1);
+            }
+            controller.enqueue(new Uint8Array(chunkBuffer));
+          });
+      };
+
+      return new ReadableStream({
+        start: streamNextChunk,
+        pull: streamNextChunk,
+        cancel() {}
+      });
     });
 }
 
 
-function ensureFileInfoCached(url, chunkSize) {
+function ensureFileInfoCached(url, chunkSize = DEFAULT_CHUNK_SIZE) {
   const cacheName = '_bs:' + url;
 
   return existsInCache(cacheName, '/')
@@ -143,59 +166,4 @@ function getChunkInfos(size, chunkSize) {
   }
 
   return r;
-}
-
-
-function series(actions, onEach) {
-  return new Promise((resolve, reject) => {
-    let i = 0;
-
-    next();
-
-    function next() {
-      if(actions.length === 0) {
-        return resolve();
-      }
-
-      const action = actions.shift();
-      action().then(r => {
-        if(onEach) {
-          onEach(r, i++);
-        }
-        next();
-      });
-    }
-  });
-}
-
-
-function createStreamCombiner(getNextStream) {
-  const inputs = [];
-
-  const output = new ReadableStream({
-    start: addNextStream,
-    pull: addNextStream,
-    cancel() {}
-  });
-
-  function addNextStream(controller) {
-
-    getNextStream().then(stream => {
-      const reader = stream.getReader();
-
-      reader.read().then(enqueueNextChunk);
-
-      function enqueueNextChunk({value, done}) {
-        if(done) {
-          controller.close();
-        } else {
-          controller.enqueue(value);
-
-          reader.read().then(enqueueNextChunk);
-        }
-      }
-    });
-  }
-
-  return output;
 }

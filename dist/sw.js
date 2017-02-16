@@ -81,7 +81,7 @@ var _slicedToArray = function () { function sliceIterator(arr, i) { var _arr = [
 var DEFAULT_CHUNK_SIZE = 128 * 1024;
 
 function handleAndCacheFile(request) {
-  return ensureFileInfoCached(request.url, DEFAULT_CHUNK_SIZE).then(function (fileInfo) {
+  return ensureFileInfoCached(request.url).then(function (fileInfo) {
     var url = fileInfo.url,
         size = fileInfo.size,
         chunks = fileInfo.chunks;
@@ -89,16 +89,45 @@ function handleAndCacheFile(request) {
 
     var rangeHeader = 'bytes=0-';
     var rangeRequest = false;
-    if (request.headers.range) {
-      rangeHeader = request.headers.range;
+    if (request.headers.get('range')) {
+      rangeHeader = request.headers.get('range');
       rangeRequest = true;
     }
 
-    var _parseRange = __WEBPACK_IMPORTED_MODULE_0_range_parser___default()(size, rangeHeader),
-        _parseRange2 = _slicedToArray(_parseRange, 1),
-        _parseRange2$ = _parseRange2[0],
-        start = _parseRange2$.start,
-        end = _parseRange2$.end;
+    var start = void 0,
+        end = void 0;
+    try {
+      var _parseRange = __WEBPACK_IMPORTED_MODULE_0_range_parser___default()(size, rangeHeader);
+
+      var _parseRange2 = _slicedToArray(_parseRange, 1);
+
+      var _parseRange2$ = _parseRange2[0];
+      start = _parseRange2$.start;
+      end = _parseRange2$.end;
+    } catch (e) {
+      return new Response('Invalid range', { status: 416 });
+    }
+
+    return ensureFileRange(url, start, end).then(function (bodyStream) {
+      return new Response(bodyStream, {
+        status: rangeRequest ? 206 : 200,
+        headers: {
+          'Accept-Ranges': 'bytes',
+          'Content-Range': 'bytes ' + start + '-' + end + '/' + size,
+          'Content-Length': end - start + 1,
+          'Content-Type': 'audio/ogg'
+        }
+      });
+    });
+  });
+}
+
+// Returns a Promise of a ReadableStream
+function ensureFileRange(url, start, end) {
+  return ensureFileInfoCached(url).then(function (fileInfo) {
+    var size = fileInfo.size,
+        chunks = fileInfo.chunks;
+
 
     var conversionFactor = chunks.length / size;
 
@@ -107,40 +136,35 @@ function handleAndCacheFile(request) {
 
     var chunksToLoad = chunks.slice(startChunk, endChunk + 1);
 
-    var chunkLoaders = chunksToLoad.map(function (chunkInfo) {
-      return function () {
-        return ensureChunkCached(url, chunkInfo);
-      };
-    });
-
-    var bufferOffset = 0;
-    var buffer = new Uint8Array(end - start + 1);
-
-    return series(chunkLoaders, function (chunk, i) {
-      var chunkInfo = chunksToLoad[i];
-
-      if (chunkInfo.start < start) {
-        chunk = chunk.slice(start - chunkInfo.start);
-      } else if (chunkInfo.end > end) {
-        chunk = chunk.slice(0, end - chunkInfo.start + 1);
+    var streamNextChunk = function streamNextChunk(controller) {
+      if (chunksToLoad.length === 0) {
+        controller.close();
+        return;
       }
 
-      buffer.set(chunk, bufferOffset);
-      bufferOffset += chunk.byteLength;
-    }).then(function () {
-      return new Response(buffer.buffer, {
-        status: rangeRequest ? 206 : 200,
-        headers: {
-          'Accept-Ranges': 'bytes',
-          'Content-Range': 'bytes ' + start + '-' + end + '/' + size,
-          'Content-Length': buffer.buffer.byteLength
+      var chunkInfo = chunksToLoad.shift();
+
+      return ensureChunkCached(url, chunkInfo).then(function (chunkBuffer) {
+        if (chunkInfo.start < start) {
+          chunkBuffer = chunkBuffer.slice(start - chunkInfo.start);
+        } else if (chunkInfo.end > end) {
+          chunkBuffer = chunkBuffer.slice(0, end - chunkInfo.start + 1);
         }
+        controller.enqueue(new Uint8Array(chunkBuffer));
       });
+    };
+
+    return new ReadableStream({
+      start: streamNextChunk,
+      pull: streamNextChunk,
+      cancel: function cancel() {}
     });
   });
 }
 
-function ensureFileInfoCached(url, chunkSize) {
+function ensureFileInfoCached(url) {
+  var chunkSize = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : DEFAULT_CHUNK_SIZE;
+
   var cacheName = '_bs:' + url;
 
   return existsInCache(cacheName, '/').then(function (exists) {
@@ -235,62 +259,6 @@ function getChunkInfos(size, chunkSize) {
   }
 
   return r;
-}
-
-function series(actions, onEach) {
-  return new Promise(function (resolve, reject) {
-    var i = 0;
-
-    next();
-
-    function next() {
-      if (actions.length === 0) {
-        return resolve();
-      }
-
-      var action = actions.shift();
-      action().then(function (r) {
-        if (onEach) {
-          onEach(r, i++);
-        }
-        next();
-      });
-    }
-  });
-}
-
-function createStreamCombiner(getNextStream) {
-  var inputs = [];
-
-  var output = new ReadableStream({
-    start: addNextStream,
-    pull: addNextStream,
-    cancel: function cancel() {}
-  });
-
-  function addNextStream(controller) {
-
-    getNextStream().then(function (stream) {
-      var reader = stream.getReader();
-
-      reader.read().then(enqueueNextChunk);
-
-      function enqueueNextChunk(_ref) {
-        var value = _ref.value,
-            done = _ref.done;
-
-        if (done) {
-          controller.close();
-        } else {
-          controller.enqueue(value);
-
-          reader.read().then(enqueueNextChunk);
-        }
-      }
-    });
-  }
-
-  return output;
 }
 
 /***/ }),
