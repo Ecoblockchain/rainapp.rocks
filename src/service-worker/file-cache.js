@@ -9,7 +9,14 @@ export function handleAndCacheFile(request) {
     .then(fileInfo => {
       const {url, size, chunks} = fileInfo;
 
-      const [{start, end}] = parseRange(size, request.headers.range || 'bytes=0-');
+      let rangeHeader = 'bytes=0-';
+      let rangeRequest = false;
+      if(request.headers.range) {
+        rangeHeader = request.headers.range;
+        rangeRequest = true;
+      }
+
+      const [{start, end}] = parseRange(size, rangeHeader);
 
       const conversionFactor = chunks.length / size;
 
@@ -22,8 +29,6 @@ export function handleAndCacheFile(request) {
 
       let bufferOffset = 0;
       const buffer = new Uint8Array(end - start + 1);
-
-      console.log('buffer size', buffer.length);
 
       return series(chunkLoaders, (chunk, i) => {
         const chunkInfo = chunksToLoad[i];
@@ -38,6 +43,7 @@ export function handleAndCacheFile(request) {
         bufferOffset += chunk.byteLength;
       })
         .then(() => new Response(buffer.buffer, {
+          status: rangeRequest ? 206 : 200,
           headers: {
             'Accept-Ranges': 'bytes',
             'Content-Range': `bytes ${start}-${end}/${size}`,
@@ -160,4 +166,36 @@ function series(actions, onEach) {
       });
     }
   });
+}
+
+
+function createStreamCombiner(getNextStream) {
+  const inputs = [];
+
+  const output = new ReadableStream({
+    start: addNextStream,
+    pull: addNextStream,
+    cancel() {}
+  });
+
+  function addNextStream(controller) {
+
+    getNextStream().then(stream => {
+      const reader = stream.getReader();
+
+      reader.read().then(enqueueNextChunk);
+
+      function enqueueNextChunk({value, done}) {
+        if(done) {
+          controller.close();
+        } else {
+          controller.enqueue(value);
+
+          reader.read().then(enqueueNextChunk);
+        }
+      }
+    });
+  }
+
+  return output;
 }

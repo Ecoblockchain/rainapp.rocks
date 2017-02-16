@@ -6,6 +6,7 @@ const STATE_ONE_PLAYING = 0;
 const STATE_TWO_PLAYING = 1;
 
 
+// TODO: Change to use web audio api
 export class CrossfadeLoopPlayer {
 	constructor() {
 		this._player1 = new Audio();
@@ -50,10 +51,14 @@ export class CrossfadeLoopPlayer {
 
 		switch(this.state) {
 		case STATE_TWO_PLAYING:
-			this._player2.play(); // Both
+			if(this._player2.src) {
+				playWhenReady(this._player2);
+			}
 
-		case STATE_ONE_PLAYING: // 1 playing
-			this._player1.play();
+		case STATE_ONE_PLAYING:
+			if(this._player1.src) {
+				playWhenReady(this._player1);
+			}
 			break;
 		}
 	}
@@ -103,5 +108,14 @@ export class CrossfadeLoopPlayer {
 		const v = this._volume;
 		this._player1.volume = this._p1volmod * v;
 		this._player2.volume = this._p2volmod * v;
+	}
+}
+
+
+function playWhenReady(audio) {
+	if(audio.readyState === audio.HAVE_ENOUGH_DATA) {
+		audio.play();
+	} else {
+		audio.addEventListener('canplaythrough', () => audio.play(), {once: true});
 	}
 }

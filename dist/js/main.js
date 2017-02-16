@@ -2710,6 +2710,7 @@ var FADE_TIME_SECONDS = 10;
 var STATE_ONE_PLAYING = 0;
 var STATE_TWO_PLAYING = 1;
 
+// TODO: Change to use web audio api
 var CrossfadeLoopPlayer = function () {
 	function CrossfadeLoopPlayer() {
 		_classCallCheck(this, CrossfadeLoopPlayer);
@@ -2727,7 +2728,7 @@ var CrossfadeLoopPlayer = function () {
 	}
 
 	_createClass(CrossfadeLoopPlayer, [{
-		key: "play",
+		key: 'play',
 		value: function play() {
 			if (!this.paused) return;
 			this.paused = false;
@@ -2736,16 +2737,19 @@ var CrossfadeLoopPlayer = function () {
 
 			switch (this.state) {
 				case STATE_TWO_PLAYING:
-					this._player2.play(); // Both
+					if (this._player2.src) {
+						playWhenReady(this._player2);
+					}
 
 				case STATE_ONE_PLAYING:
-					// 1 playing
-					this._player1.play();
+					if (this._player1.src) {
+						playWhenReady(this._player1);
+					}
 					break;
 			}
 		}
 	}, {
-		key: "pause",
+		key: 'pause',
 		value: function pause() {
 			if (this.paused) return;
 			this.paused = true;
@@ -2756,7 +2760,7 @@ var CrossfadeLoopPlayer = function () {
 			this._player2.pause();
 		}
 	}, {
-		key: "_fadeManager",
+		key: '_fadeManager',
 		value: function _fadeManager() {
 			if (this.paused) return;
 
@@ -2790,14 +2794,14 @@ var CrossfadeLoopPlayer = function () {
 			}
 		}
 	}, {
-		key: "_flushVolume",
+		key: '_flushVolume',
 		value: function _flushVolume() {
 			var v = this._volume;
 			this._player1.volume = this._p1volmod * v;
 			this._player2.volume = this._p2volmod * v;
 		}
 	}, {
-		key: "src",
+		key: 'src',
 		get: function get() {
 			return this._src;
 		},
@@ -2810,7 +2814,7 @@ var CrossfadeLoopPlayer = function () {
 			}
 		}
 	}, {
-		key: "volume",
+		key: 'volume',
 		get: function get() {
 			return this._volume;
 		},
@@ -2824,6 +2828,16 @@ var CrossfadeLoopPlayer = function () {
 
 	return CrossfadeLoopPlayer;
 }();
+
+function playWhenReady(audio) {
+	if (audio.readyState === audio.HAVE_ENOUGH_DATA) {
+		audio.play();
+	} else {
+		audio.addEventListener('canplaythrough', function () {
+			return audio.play();
+		}, { once: true });
+	}
+}
 
 /***/ }),
 /* 18 */
