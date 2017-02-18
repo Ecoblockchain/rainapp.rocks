@@ -43,6 +43,14 @@ export class CrossfadeLoopPlayer {
 		}
 	}
 
+	get loop() {
+		return this._player1.loop;
+	}
+	set loop(v) {
+		this._player1.loop = v;
+		this._player2.loop = v;
+	}
+
 	play() {
 		if(!this.paused) return;
 		this.paused = false;

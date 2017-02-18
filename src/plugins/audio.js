@@ -18,6 +18,8 @@ export default function syncAudio(store) {
 
 			player.volume = volume;
 			player.src = `/audio/${usingFull ? 'full' : 'samples'}/${id}.ogg`;
+			player.loop = true;
+
 			if(playing) {
 				player.play();
 			} else {

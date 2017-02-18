@@ -2412,6 +2412,8 @@ function syncAudio(store) {
 
 			player.volume = volume;
 			player.src = '/audio/' + (usingFull ? 'full' : 'samples') + '/' + id + '.ogg';
+			player.loop = true;
+
 			if (playing) {
 				player.play();
 			} else {
@@ -2823,6 +2825,15 @@ var CrossfadeLoopPlayer = function () {
 				this._volume = v;
 				this._flushVolume();
 			}
+		}
+	}, {
+		key: 'loop',
+		get: function get() {
+			return this._player1.loop;
+		},
+		set: function set(v) {
+			this._player1.loop = v;
+			this._player2.loop = v;
 		}
 	}]);
 

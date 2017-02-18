@@ -2,7 +2,8 @@ import {
   on,
   cacheAll,
   createRouter,
-  cacheFirst
+  cacheFirst,
+  ensureCached
 } from 'swkit';
 import {handleAndCacheFile} from './file-cache';
 
@@ -23,7 +24,16 @@ const precachePaths = [
 
   '/images/rain_bg.jpg',
   '/css/comfortaa.woff2',
+];
 
+precachePaths.forEach(path => {
+  router.get(path, precacheCacheFirst);
+});
+
+
+const staticCache = ensureCached('precache_rainapp');
+
+const staticPaths = [
   '/icons/weather/campfire.svg',
   '/icons/weather/crickets.svg',
   '/icons/weather/drizzle.svg',
@@ -39,8 +49,8 @@ const precachePaths = [
   '/audio/samples/lightning.ogg'
 ];
 
-precachePaths.forEach(path => {
-  router.get(path, precacheCacheFirst);
+staticPaths.forEach(path => {
+  router.get(path, staticCache);
 });
 
 

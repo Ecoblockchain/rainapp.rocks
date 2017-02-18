@@ -11,7 +11,7 @@ export function handleAndCacheFile(request) {
 
       let rangeHeader = 'bytes=0-';
       let rangeRequest = false;
-      if(request.headers.get('range')) {
+      if(request.headers.has('range')) {
         rangeHeader = request.headers.get('range');
         rangeRequest = true;
       }
@@ -20,6 +20,7 @@ export function handleAndCacheFile(request) {
       try {
         [{start, end}] = parseRange(size, rangeHeader);
       } catch(e) {
+        console.error(e);
         return new Response('Invalid range', {status: 416});
       }
 
@@ -64,6 +65,7 @@ function ensureFileRange(url, start, end) {
             } else if(chunkInfo.end > end) {
               chunkBuffer = chunkBuffer.slice(0, end - chunkInfo.start + 1);
             }
+
             controller.enqueue(new Uint8Array(chunkBuffer));
           });
       };
@@ -84,7 +86,8 @@ function ensureFileInfoCached(url, chunkSize = DEFAULT_CHUNK_SIZE) {
     .then(exists => {
       if(!exists) {
         return fetchFileInfo(url, chunkSize)
-          .then(fileInfo => storeInCache(cacheName, '/', JSON.stringify(fileInfo)));
+          .then(fileInfo => storeInCache(cacheName, '/', JSON.stringify(fileInfo))
+            .then(() => fileInfo));
       } else {
         return fetchFromCache(cacheName, '/', 'json');
       }
