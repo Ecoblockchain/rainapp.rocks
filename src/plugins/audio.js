@@ -1,4 +1,4 @@
-import {CrossfadeLoopPlayer} from './player';
+import {CrossfadeLoopPlayer} from './webaudioplayer';
 
 
 export default function syncAudio(store) {
@@ -18,7 +18,6 @@ export default function syncAudio(store) {
 
 			player.volume = volume;
 			player.src = `/audio/${usingFull ? 'full' : 'samples'}/${id}.ogg`;
-			player.loop = true;
 
 			if(playing) {
 				player.play();
